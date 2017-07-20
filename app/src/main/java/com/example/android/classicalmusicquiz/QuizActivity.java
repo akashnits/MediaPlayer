@@ -17,13 +17,17 @@
 package com.example.android.classicalmusicquiz;
 
 import android.content.Intent;
+import android.drm.DrmStore;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.media.session.MediaSession;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -44,6 +48,7 @@ import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.ui.PlaybackControlView;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
@@ -64,6 +69,8 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     private Button[] mButtons;
     private SimpleExoPlayer mExoPlayer;
     private SimpleExoPlayerView mPlayerView;
+    private MediaSessionCompat mMediaSession;
+    private PlaybackStateCompat.Builder mStateBuilder;
 
 
     @Override
@@ -121,6 +128,20 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
         // Initialize the player.
         initializePlayer(Uri.parse(answerSample.getUri()));
+        initializeMediaSession();
+    }
+
+    public void initializeMediaSession(){
+        mMediaSession= new MediaSessionCompat(this, TAG);
+        mMediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS| MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        mMediaSession.setMediaButtonReceiver(null);
+        mStateBuilder= new PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY| PlaybackStateCompat.ACTION_PAUSE
+                        | PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
+
+        mMediaSession.setPlaybackState(mStateBuilder.build());
+        mMediaSession.setCallback(new MySessionCallback());
+        mMediaSession.setActive(true);
     }
 
 
@@ -269,6 +290,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         // TODO (4): When the activity is destroyed, set the MediaSession to inactive.
         super.onDestroy();
         releasePlayer();
+        mMediaSession.setActive(false);
     }
 
     
@@ -290,9 +312,11 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if((playbackState == ExoPlayer.STATE_READY) && playWhenReady){
             // TODO (3): When ExoPlayer is playing, update the PlayBackState.
+            mStateBuilder.setState(PlaybackStateCompat.STATE_PLAYING, mExoPlayer.getCurrentPosition(), 1f);
             Log.d(TAG, "onPlayerStateChanged: PLAYING");
         } else if((playbackState == ExoPlayer.STATE_READY)){
             // TODO (3): When ExoPlayer is paused, update the PlayBackState.
+            mStateBuilder.setState(PlaybackStateCompat.STATE_PAUSED, mExoPlayer.getCurrentPosition(), 1f);
             Log.d(TAG, "onPlayerStateChanged: PAUSED");
         }
     }
@@ -303,5 +327,29 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onPositionDiscontinuity() {
+    }
+
+    private class MySessionCallback extends MediaSessionCompat.Callback{
+
+        public MySessionCallback() {
+        }
+
+        @Override
+        public void onPlay() {
+            super.onPlay();
+            mExoPlayer.setPlayWhenReady(true);
+        }
+
+        @Override
+        public void onPause() {
+            super.onPause();
+            mExoPlayer.setPlayWhenReady(false);
+        }
+
+        @Override
+        public void onSkipToPrevious() {
+            super.onSkipToPrevious();
+            mExoPlayer.seekTo(0);
+        }
     }
 }
