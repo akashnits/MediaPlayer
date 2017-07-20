@@ -26,26 +26,31 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
 import java.util.ArrayList;
 
-public class QuizActivity extends AppCompatActivity implements View.OnClickListener {
+public class QuizActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener {
 
     private static final int CORRECT_ANSWER_DELAY_MILLIS = 1000;
     private static final String REMAINING_SONGS_KEY = "remaining_songs";
@@ -90,6 +95,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         // TODO (3): Replace the default artwork in the SimpleExoPlayerView with the question mark drawable.
         // Load the image of the composer for the answer into the ImageView.
 
+
         mComposerView.setDefaultArtwork(BitmapFactory.decodeResource(getResources(), R.drawable.question_mark));
 
         // If there is only one answer left, end the game.
@@ -111,6 +117,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         // TODO (5): Create a method called initializePlayer() that takes a Uri as an argument and call it here, passing in the Sample URI.
 
         initializePlayer(Uri.parse(answerSample.getUri()));
+        mPlayer.addListener(this);
         }
 
     public void initializePlayer(Uri uri){
@@ -242,5 +249,39 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         mPlayer.stop();
         mPlayer.release();
         mPlayer= null;
+    }
+
+    @Override
+    public void onTimelineChanged(Timeline timeline, Object manifest) {
+
+    }
+
+    @Override
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+
+    }
+
+    @Override
+    public void onLoadingChanged(boolean isLoading) {
+
+    }
+
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        if(playWhenReady && playbackState == ExoPlayer.STATE_READY){
+            Log.v("QuizActivity", "playing");
+        }else if(ExoPlayer.STATE_READY == playbackState){
+            Log.v("QuizActivity", "paused");
+        }
+    }
+
+    @Override
+    public void onPlayerError(ExoPlaybackException error) {
+
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+
     }
 }
